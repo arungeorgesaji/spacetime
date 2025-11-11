@@ -31,4 +31,21 @@ defmodule Spacetime.SCM.ObjectParser do
     object_path = Path.join([@object_dir, String.slice(object_id, 0, 2), String.slice(object_id, 2..-1//1)])
     File.exists?(object_path)
   end
+
+  def store_blob(content) do
+    Spacetime.SCM.Internals.create_blob(content)
+  end
+
+  def read_blob(blob_id) do
+    Spacetime.SCM.Internals.read_blob(blob_id)
+  end
+
+  def get_object_type(object_id) do
+    with {:ok, object_data} <- get_object(object_id) do
+      case String.split(object_data, " ", parts: 2) do
+        [type, _] -> {:ok, type}
+        _ -> {:error, "Unknown object type"}
+      end
+    end
+  end
 end

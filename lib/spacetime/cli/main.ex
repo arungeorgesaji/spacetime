@@ -31,7 +31,18 @@ defmodule Spacetime.CLI.Main do
               required: true
             ]
           ]
-        ]
+        ],
+        "debug-store": [
+          name: "debug-store",
+          about: "Test blob storage and retrieval in Spacetime",
+          args: [
+            content: [
+              value_name: "CONTENT",
+              help: "Content to store and retrieve for testing",
+              required: true
+            ]
+          ]
+        ],
       ]
     ]
   end
@@ -49,7 +60,11 @@ defmodule Spacetime.CLI.Main do
       {[:"debug-object"], parsed} ->
         content = parsed.args |> Map.values() |> List.first()
         test_object_storage(content)
-        
+
+      {[:"debug-store"], parsed} ->
+        content = parsed.args |> Map.values() |> List.first()
+        test_blob_storage(content)
+
       {[], _parsed} ->
         IO.puts(Optimus.help(optimus))
         
@@ -109,6 +124,34 @@ defmodule Spacetime.CLI.Main do
         
       {:error, reason} ->
         IO.puts "Error retrieving: #{reason}"
+    end
+  end
+
+  defp test_blob_storage(filename) do
+    IO.puts "Testing blob storage..."
+    
+    if File.exists?(filename) do
+      content = File.read!(filename)
+      blob_id = Spacetime.SCM.ObjectParser.store_blob(content)
+      
+      IO.puts "Stored blob: #{blob_id}"
+      IO.puts "File size: #{byte_size(content)} bytes"
+      
+      case Spacetime.SCM.ObjectParser.read_blob(blob_id) do
+        {:ok, retrieved_content} ->
+          IO.puts "Retrieved blob content"
+          IO.puts "Content matches: #{content == retrieved_content}"
+          
+          case Spacetime.SCM.ObjectParser.get_object_type(blob_id) do
+            {:ok, type} -> IO.puts "Object type: #{type}"
+            _ -> IO.puts "Unknown object type"
+          end
+          
+        {:error, reason} ->
+          IO.puts "Error reading blob: #{reason}"
+      end
+    else
+      IO.puts "File not found: #{filename}"
     end
   end
   

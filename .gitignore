@@ -5,3 +5,4 @@ todo
 *.beam
 *.ez 
 /.spacetime
+test.txt
