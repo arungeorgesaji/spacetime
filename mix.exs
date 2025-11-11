@@ -16,7 +16,7 @@ defmodule Spacetime.MixProject do
 
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :crypto],
       mod: {Spacetime.Application, []}
     ]
   end

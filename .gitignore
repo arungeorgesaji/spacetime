@@ -3,5 +3,5 @@ todo
 /deps
 /spacetime
 *.beam
-*.ez
-
+*.ez 
+/.spacetime
