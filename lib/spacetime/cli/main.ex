@@ -43,6 +43,14 @@ defmodule Spacetime.CLI.Main do
             ]
           ]
         ],
+        "debug-tree": [
+          name: "debug-tree",
+          about: "Test blob storage and retrieval in Spacetime",
+        ],
+        "debug-list": [
+          name: "debug-list",
+          about: "List all stored objects (blobs, trees, commits) in the Spacetime repository",
+        ],
       ]
     ]
   end
@@ -64,6 +72,12 @@ defmodule Spacetime.CLI.Main do
       {[:"debug-store"], parsed} ->
         content = parsed.args |> Map.values() |> List.first()
         test_blob_storage(content)
+
+      {[:"debug-tree"], _parsed} ->
+        test_tree_storage()
+
+      {[:"debug-list"], _parsed} ->
+        list_objects()
 
       {[], _parsed} ->
         IO.puts(Optimus.help(optimus))
@@ -152,6 +166,51 @@ defmodule Spacetime.CLI.Main do
       end
     else
       IO.puts "File not found: #{filename}"
+    end
+  end
+
+  defp test_tree_storage do
+    IO.puts "Testing tree storage..."
+    
+    blob1_id = Spacetime.SCM.ObjectParser.store_blob("Hello from file1.txt!")
+    blob2_id = Spacetime.SCM.ObjectParser.store_blob("Content of file2.txt")
+    
+    IO.puts "Created blobs:"
+    IO.puts "   - file1.txt: #{blob1_id}"
+    IO.puts "   - file2.txt: #{blob2_id}"
+    
+    entries = [
+      %{name: "file1.txt", type: :blob, id: blob1_id, mode: "100644"},
+      %{name: "file2.txt", type: :blob, id: blob2_id, mode: "100644"}
+    ]
+    
+    tree_id = Spacetime.SCM.ObjectParser.store_tree(entries)
+    IO.puts "Stored tree: #{tree_id}"
+    
+    case Spacetime.SCM.ObjectParser.read_tree(tree_id) do
+      {:ok, retrieved_entries} ->
+        IO.puts "Retrieved tree entries:"
+        Enum.each(retrieved_entries, fn entry ->
+          IO.puts "   - #{entry.mode} #{entry.type} #{String.slice(entry.id, 0, 8)} #{entry.name}"
+        end)
+        
+      {:error, reason} ->
+        IO.puts "Error reading tree: #{reason}"
+    end
+  end
+
+  defp list_objects do
+    IO.puts "Listing all objects:"
+    
+    objects = Spacetime.SCM.ObjectParser.list_objects()
+    
+    if Enum.empty?(objects) do
+      IO.puts "   No objects found"
+    else
+      Enum.each(objects, fn {object_id, type} ->
+        IO.puts "   - #{String.slice(object_id, 0, 16)}... (#{type})"
+      end)
+      IO.puts "Total: #{length(objects)} objects"
     end
   end
   
