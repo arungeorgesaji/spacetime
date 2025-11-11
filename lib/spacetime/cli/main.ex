@@ -20,6 +20,17 @@ defmodule Spacetime.CLI.Main do
           name: "status",
           about: "Show repository status",
           args: []
+        ],
+        "debug-object": [
+          name: "debug-object",
+          about: "Test object storage and retrieval in Spacetime",
+          args: [
+            content: [
+              value_name: "CONTENT",
+              help: "Content to store and retrieve for testing",
+              required: true
+            ]
+          ]
         ]
       ]
     ]
@@ -34,6 +45,10 @@ defmodule Spacetime.CLI.Main do
         
       {[:status], _parsed} ->
         show_status()
+
+      {[:"debug-object"], parsed} ->
+        content = parsed.args |> Map.values() |> List.first()
+        test_object_storage(content)
         
       {[], _parsed} ->
         IO.puts(Optimus.help(optimus))
@@ -43,8 +58,8 @@ defmodule Spacetime.CLI.Main do
         System.halt(1)
     end
   rescue
-    e in Optimus.ParseError ->
-      IO.puts("Error: #{e.message}")
+    e in RuntimeError ->
+      IO.puts("Error: #{Exception.message(e)}")
       System.halt(1)
   end
   
@@ -78,6 +93,22 @@ defmodule Spacetime.CLI.Main do
     else
       IO.puts("Not a spacetime repository")
       IO.puts("Run 'spacetime init' to begin")
+    end
+  end
+
+  defp test_object_storage(content) do
+    IO.puts "Testing object storage..."
+    
+    object_id = Spacetime.SCM.ObjectParser.store_object(content)
+    IO.puts "Stored object: #{object_id}"
+    
+    case Spacetime.SCM.ObjectParser.get_object(object_id) do
+      {:ok, retrieved_content} ->
+        IO.puts "Retrieved object: #{retrieved_content}"
+        IO.puts "Match: #{content == retrieved_content}"
+        
+      {:error, reason} ->
+        IO.puts "Error retrieving: #{reason}"
     end
   end
   
