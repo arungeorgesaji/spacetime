@@ -1,23 +1,21 @@
-# Spacetime SCM
+# Spacetime
 
-*A version control system where your code obeys the laws of physics.*
+**TODO: Add description**
 
----
+## Installation
 
-## Why Spacetime?
+If [available in Hex](https://hex.pm/docs/publish), the package can be installed
+by adding `spacetime` to your list of dependencies in `mix.exs`:
 
-Traditional version control treats all code as equal. Spacetime recognizes that **code has mass, history has gravity, and some changes are cosmic events.**
+```elixir
+def deps do
+  [
+    {:spacetime, "~> 0.1.0"}
+  ]
+end
+```
 
-### The Problem
-- Technical debt accumulates invisibly
-- Breaking changes cause endless "can we revert?" debates  
-- Legacy code becomes riskier to touch but hard to identify
-- Merge conflicts from ancient branches surprise everyone
+Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
+and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
+be found at <https://hexdocs.pm/spacetime>.
 
-### The Solution
-Spacetime makes software evolution **quantifiable through physics**:
-- **Gravitational Mass** = code complexity + dependencies + age
-- **Redshift** = gradual code obfuscation over time
-- **Event Horizons** = commits that cannot be reversed
-
----
