@@ -45,17 +45,24 @@ defmodule Spacetime.CLI.Commands.RedshiftStatus do
   end
 
   defp find_code_files do
-    patterns = ["*.ex", "*.exs", "*.js", "*.ts", "*.py", "*.rb", "*.java", "*.go", "*.rs", "*.cpp", "*.c", "*.h"]
-    
-    patterns
-    |> Enum.flat_map(fn pattern ->
-      case File.ls(".") do
-        {:ok, files} -> 
-          files 
-          |> Enum.filter(&String.ends_with?(&1, String.trim_leading(pattern, "*")))
-        _ -> []
-      end
+    Path.wildcard("**/*", match_dot: false)
+    |> Enum.filter(fn path ->
+      File.regular?(path) and text_file?(path)
     end)
-    |> Enum.uniq()
+  end
+
+  defp text_file?(path) do
+    case File.read(path) do
+      {:ok, content} ->
+        printable_ratio =
+          content
+          |> :binary.bin_to_list()
+          |> Enum.count(fn c -> c in 9..13 or c in 32..126 end)
+          |> then(&(&1 / max(byte_size(content), 1)))
+
+        printable_ratio > 0.9
+      _ ->
+        false
+    end
   end
 end
