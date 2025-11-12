@@ -21,6 +21,11 @@ defmodule Spacetime.CLI.Main do
           about: "Show repository status",
           args: []
         ],
+        redshift: [
+          name: "redshift",
+          about: "Show code aging and readability analysis",
+          args: []
+        ],
         "debug-object": [
           name: "debug-object",
           about: "Test object storage and retrieval in Spacetime",
@@ -72,6 +77,9 @@ defmodule Spacetime.CLI.Main do
         
       {[:status], _parsed} ->
         show_status()
+
+      {[:redshift], _parsed} ->
+        Spacetime.CLI.Commands.RedshiftStatus.run()
 
       {[:"debug-object"], parsed} ->
         content = parsed.args |> Map.values() |> List.first()

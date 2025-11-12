@@ -6,3 +6,5 @@ todo
 *.ez 
 /.spacetime
 test.txt
+test.js
+old_code.py 
