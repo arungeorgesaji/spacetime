@@ -79,4 +79,16 @@ defmodule Spacetime.SCM.ObjectParser do
       []
     end
   end
+
+  def store_commit(commit_params) do
+    Spacetime.SCM.Internals.create_commit(commit_params)
+  end 
+
+  def read_commit(commit_id) do
+    Spacetime.SCM.Internals.read_commit(commit_id)
+  end
+
+  def get_commit_history(commit_id) do
+    Spacetime.SCM.Internals.get_commit_history(commit_id)
+  end
 end

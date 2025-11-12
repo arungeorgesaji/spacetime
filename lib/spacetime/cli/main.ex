@@ -51,6 +51,14 @@ defmodule Spacetime.CLI.Main do
           name: "debug-list",
           about: "List all stored objects (blobs, trees, commits) in the Spacetime repository",
         ],
+        "debug-commit": [
+          name: "debug-commit",
+          about: "Test commit storage and retrieval in Spacetime",
+        ],
+        "debug-history": [
+          name: "debug-history",
+          about: "Show commit history in Spacetime",
+        ],
       ]
     ]
   end
@@ -75,6 +83,12 @@ defmodule Spacetime.CLI.Main do
 
       {[:"debug-tree"], _parsed} ->
         test_tree_storage()
+
+      {[:"debug-commit"], _parsed} ->
+        test_commit_storage()
+
+      {[:"debug-history"], _parsed} ->
+        test_commit_storage()
 
       {[:"debug-list"], _parsed} ->
         list_objects()
@@ -229,5 +243,63 @@ defmodule Spacetime.CLI.Main do
     else
       0
     end
+  end
+
+  defp test_commit_storage do
+    IO.puts "Testing commit storage..."
+    
+    tree_id = test_tree_storage()
+    
+    commit1_id = Spacetime.SCM.ObjectParser.store_commit(%{
+      tree: tree_id,
+      message: "Initial commit with two files",
+      author: "Cosmic Developer <cosmic@spacetime.dev>",
+      committer: "Spacetime SCM <system@spacetime.dev>"
+    })
+    
+    IO.puts "Stored initial commit: #{commit1_id}"
+    
+    commit2_id = Spacetime.SCM.ObjectParser.store_commit(%{
+      tree: tree_id,
+      parent: commit1_id,
+      message: "Second commit with spacetime physics",
+      author: "Cosmic Developer <cosmic@spacetime.dev>",
+      committer: "Spacetime SCM <system@spacetime.dev>"
+    })
+    
+    IO.puts "Stored second commit: #{commit2_id}"
+    
+    IO.puts "\nReading commit #{String.slice(commit2_id, 0, 8)}:"
+    case Spacetime.SCM.ObjectParser.read_commit(commit2_id) do
+      {:ok, commit_data} ->
+        IO.puts "   Tree: #{commit_data.tree |> List.first() |> String.slice(0, 8)}"
+        IO.puts "   Parent: #{commit_data.parent |> List.first() |> String.slice(0, 8)}"
+        IO.puts "   Author: #{commit_data.author |> List.first()}"
+        IO.puts "   Message: #{String.trim(commit_data.message)}"
+        IO.puts "   Spacetime: #{commit_data[:"spacetime-version"] |> List.first()}"
+        
+      {:error, reason} ->
+        IO.puts "Error reading commit: #{reason}"
+    end
+
+    commit2_id
+  end
+
+  defp show_commit_history do
+    IO.puts "Showing commit history..."
+    
+    commit_id = test_commit_storage()
+    
+    IO.puts "\nCommit history:"
+    history = Spacetime.SCM.ObjectParser.get_commit_history(commit_id)
+    
+    Enum.each(history, fn %{id: commit_id, data: commit_data} ->
+      IO.puts "   commit #{String.slice(commit_id, 0, 8)}"
+      IO.puts "   Author: #{commit_data.author |> List.first()}"
+      IO.puts "   Message: #{String.trim(commit_data.message)}"
+      IO.puts "   ---"
+    end)
+    
+    IO.puts "Total commits: #{length(history)}"
   end
 end

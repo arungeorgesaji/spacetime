@@ -111,4 +111,102 @@ defmodule Spacetime.SCM.Internals do
       error -> error
     end
   end
+
+  def create_commit(%{tree: tree_id, message: message} = params) do
+    headers = [
+      "tree #{tree_id}",
+      "author #{params[:author] || "Unknown <unknown@localhost>"}",
+      "committer #{params[:committer] || "Unknown <unknown@localhost>"}",
+      "timestamp #{params[:timestamp] || DateTime.utc_now() |> DateTime.to_iso8601()}",
+    ]
+
+    headers = if params[:parent] do
+      ["parent #{params[:parent]}" | headers]
+    else
+      headers
+    end
+
+    headers = headers ++ [
+      "spacetime-version 0.1.0",
+      "redshift 0.0",  
+      "gravity-mass 0.0"  
+    ]
+
+    headers_str = Enum.join(headers, "\n")
+    commit_content = headers_str <> "\n\n" <> message
+
+    header = "commit #{byte_size(commit_content)}\0"
+    commit_data = header <> commit_content
+    Spacetime.SCM.ObjectParser.store_object(commit_data)
+  end
+
+  def parse_commit(object_data) do
+    case String.split(object_data, "\0", parts: 2) do
+      [header, content] ->
+        case String.split(header, " ") do
+          ["commit", size] ->
+            expected_size = String.to_integer(size)
+            actual_size = byte_size(content)
+            
+            if expected_size == actual_size do
+              parse_commit_content(content)
+            else
+              {:error, "Size mismatch: expected #{expected_size}, got #{actual_size}"}
+            end
+            
+          _ ->
+            {:error, "Invalid commit header"}
+        end
+        
+      _ ->
+        {:error, "Invalid commit format"}
+    end
+  end
+
+  defp parse_commit_content(content) do
+    [headers_part, message] = String.split(content, "\n\n", parts: 2)
+    
+    headers = headers_part
+    |> String.split("\n")
+    |> Enum.reduce(%{}, fn line, acc ->
+      case String.split(line, " ", parts: 2) do
+        [key, value] ->
+          key = String.to_atom(key)
+          Map.update(acc, key, [value], &(&1 ++ [value]))
+        _ ->
+          acc
+      end
+    end)
+    |> Map.update(:message, message, fn _ -> message end)
+
+    {:ok, headers}
+  end
+
+  def read_commit(commit_id) do
+    with {:ok, object_data} <- Spacetime.SCM.ObjectParser.get_object(commit_id),
+         {:ok, commit_data} <- parse_commit(object_data) do
+      {:ok, commit_data}
+    else
+      error -> error
+    end
+  end
+
+  def get_commit_history(commit_id) do
+    get_commit_history(commit_id, [])
+  end
+
+  defp get_commit_history(commit_id, acc) do
+    case read_commit(commit_id) do
+      {:ok, commit_data} ->
+        history = [%{id: commit_id, data: commit_data} | acc]
+        
+        case commit_data[:parent] do
+          [parent_id | _] -> get_commit_history(parent_id, history)
+          _ -> history
+        end
+        
+      {:error, _} ->
+        acc
+    end
+  end
 end
