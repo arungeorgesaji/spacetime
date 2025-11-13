@@ -209,6 +209,7 @@ defmodule Spacetime.CLI.Main do
     tree_id = Spacetime.SCM.ObjectParser.store_tree(entries)
     IO.puts "Stored tree: #{tree_id}"
     
+    IO.puts "Reading tree back..."
     case Spacetime.SCM.ObjectParser.read_tree(tree_id) do
       {:ok, retrieved_entries} ->
         IO.puts "Retrieved tree entries:"
@@ -218,7 +219,13 @@ defmodule Spacetime.CLI.Main do
         
       {:error, reason} ->
         IO.puts "Error reading tree: #{reason}"
+        case Spacetime.SCM.ObjectParser.get_object(tree_id) do
+          {:error, err} -> IO.puts "   get_object error: #{err}"
+          data -> IO.puts "   get_object returned: #{inspect(String.slice(data, 0, 50))}..."
+        end
     end
+
+    tree_id
   end
 
   defp list_objects do

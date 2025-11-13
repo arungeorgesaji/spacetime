@@ -29,11 +29,9 @@ defmodule Spacetime.SCM.Internals do
   end
 
   def read_blob(blob_id) do
-    with {:ok, object_data} <- Spacetime.SCM.ObjectParser.get_object(blob_id),
-         {:ok, content} <- parse_blob(object_data) do
-      {:ok, content}
-    else
-      error -> error
+    case Spacetime.SCM.ObjectParser.get_object(blob_id) do
+      {:error, reason} -> {:error, reason}
+      object_data -> parse_blob(object_data)
     end
   end
 
@@ -78,7 +76,7 @@ defmodule Spacetime.SCM.Internals do
     end
   end
 
-   defp parse_tree_entries(content) do
+  defp parse_tree_entries(content) do
     content
     |> String.split("\n")
     |> Enum.filter(fn line -> line != "" end)
@@ -103,15 +101,6 @@ defmodule Spacetime.SCM.Internals do
     |> Enum.filter(& &1)
   end
 
-  def read_tree(tree_id) do
-    with {:ok, object_data} <- Spacetime.SCM.ObjectParser.get_object(tree_id),
-         {:ok, entries} <- parse_tree(object_data) do
-      {:ok, entries}
-    else
-      error -> error
-    end
-  end
-
   def create_commit(%{tree: tree_id, message: message} = params) do
     headers = [
       "tree #{tree_id}",
@@ -126,10 +115,23 @@ defmodule Spacetime.SCM.Internals do
       headers
     end
 
+    files_in_commit = case read_tree(tree_id) do
+      {:ok, entries} ->
+        Enum.flat_map(entries, fn entry ->
+          case entry.type do
+            :blob -> [entry.name]
+            :tree -> [] 
+          end
+        end)
+      _ -> []
+    end
+
+    headers = headers ++ ["files #{Enum.join(files_in_commit, ",")}"]
+
     headers = headers ++ [
       "spacetime-version 0.1.0",
-      "redshift 0.0",  
-      "gravity-mass 0.0"  
+      "redshift 0.0",
+      "gravity-mass 0.0"
     ]
 
     headers_str = Enum.join(headers, "\n")
@@ -138,6 +140,38 @@ defmodule Spacetime.SCM.Internals do
     header = "commit #{byte_size(commit_content)}\0"
     commit_data = header <> commit_content
     Spacetime.SCM.ObjectParser.store_object(commit_data)
+  end
+
+  def read_tree(tree_id) do
+    case Spacetime.SCM.ObjectParser.get_object(tree_id) do
+      {:error, reason} -> {:error, reason}
+      object_data -> parse_tree(object_data)
+    end
+  end
+
+  def get_commit_files(commit_id) do
+    case read_commit(commit_id) do
+      {:ok, commit_data} ->
+        case commit_data[:files] do
+          [files_str | _] -> String.split(files_str, ",")
+          _ -> []
+        end
+        
+      {:error, _} ->
+        []
+    end
+  end
+
+  def file_in_commit?(commit_id, file_path) do
+    files = get_commit_files(commit_id)
+    file_path in files
+  end
+
+  def find_latest_commit_for_file(file_path, commit_history) do
+    commit_history
+    |> Enum.find(fn %{id: commit_id} ->
+      file_in_commit?(commit_id, file_path)
+    end)
   end
 
   def parse_commit(object_data) do
@@ -183,11 +217,9 @@ defmodule Spacetime.SCM.Internals do
   end
 
   def read_commit(commit_id) do
-    with {:ok, object_data} <- Spacetime.SCM.ObjectParser.get_object(commit_id),
-         {:ok, commit_data} <- parse_commit(object_data) do
-      {:ok, commit_data}
-    else
-      error -> error
+    case Spacetime.SCM.ObjectParser.get_object(commit_id) do
+      {:error, reason} -> {:error, reason}
+      object_data -> parse_commit(object_data)
     end
   end
 

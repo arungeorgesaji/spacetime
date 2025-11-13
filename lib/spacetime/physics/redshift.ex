@@ -19,10 +19,7 @@ defmodule Spacetime.Physics.Redshift do
   end
 
   defp get_file_age_days(file_path, commit_history) do
-    latest_commit = Enum.find(commit_history, fn %{data: commit_data} ->
-      # Have to actually implement logic to check if the commit modified the file 
-      true
-    end)
+    latest_commit = Spacetime.SCM.Internals.find_latest_commit_for_file(file_path, commit_history)
     
     case latest_commit do
       %{data: %{timestamp: [timestamp | _]}} ->
@@ -32,7 +29,14 @@ defmodule Spacetime.Physics.Redshift do
         DateTime.diff(now, commit_time, :day)
         
       _ ->
-        nil
+        case File.stat(file_path) do
+          {:ok, %File.Stat{mtime: mtime}} ->
+            now = DateTime.utc_now()
+            file_time = DateTime.from_unix!(elem(mtime, 0))
+            DateTime.diff(now, file_time, :day)
+          _ ->
+            nil
+        end
     end
   end
 

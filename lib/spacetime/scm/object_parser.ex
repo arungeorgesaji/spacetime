@@ -4,7 +4,9 @@ defmodule Spacetime.SCM.ObjectParser do
   def store_object(data) when is_binary(data) do
     object_id = :crypto.hash(:sha256, data) |> Base.encode16(case: :lower)
     
-    object_path = Path.join([@object_dir, String.slice(object_id, 0, 2), String.slice(object_id, 2..-1//1)])
+    dir = String.slice(object_id, 0, 2)
+    file = String.slice(object_id, 2, String.length(object_id) - 2)
+    object_path = Path.join([@object_dir, dir, file])
     
     File.mkdir_p!(Path.dirname(object_path))
     
@@ -15,12 +17,13 @@ defmodule Spacetime.SCM.ObjectParser do
   end
 
   def get_object(object_id) do
-    object_path = Path.join([@object_dir, String.slice(object_id, 0, 2), String.slice(object_id, 2..-1//1)])
+    dir = String.slice(object_id, 0, 2)
+    file = String.slice(object_id, 2, String.length(object_id) - 2)
+    object_path = Path.join([@object_dir, dir, file])
     
     case File.read(object_path) do
       {:ok, compressed_data} ->
-        data = :zlib.uncompress(compressed_data)
-        {:ok, data}
+        :zlib.uncompress(compressed_data)
         
       {:error, reason} ->
         {:error, "Object not found: #{reason}"}
@@ -28,7 +31,9 @@ defmodule Spacetime.SCM.ObjectParser do
   end
 
   def object_exists?(object_id) do
-    object_path = Path.join([@object_dir, String.slice(object_id, 0, 2), String.slice(object_id, 2..-1//1)])
+    dir = String.slice(object_id, 0, 2)
+    file = String.slice(object_id, 2, String.length(object_id) - 2)
+    object_path = Path.join([@object_dir, dir, file])
     File.exists?(object_path)
   end
 
@@ -37,15 +42,20 @@ defmodule Spacetime.SCM.ObjectParser do
   end
 
   def read_blob(blob_id) do
-    Spacetime.SCM.Internals.read_blob(blob_id)
+    case get_object(blob_id) do
+      {:error, reason} -> {:error, reason}
+      object_data -> Spacetime.SCM.Internals.parse_blob(object_data)
+    end
   end
 
   def get_object_type(object_id) do
-    with {:ok, object_data} <- get_object(object_id) do
-      case String.split(object_data, " ", parts: 2) do
-        [type, _] -> {:ok, type}
-        _ -> {:error, "Unknown object type"}
-      end
+    case get_object(object_id) do
+      {:error, _} -> "unknown"
+      object_data ->
+        case String.split(object_data, " ", parts: 2) do
+          [type, _] -> type
+          _ -> "unknown"
+        end
     end
   end
 
@@ -54,7 +64,10 @@ defmodule Spacetime.SCM.ObjectParser do
   end
 
   def read_tree(tree_id) do
-    Spacetime.SCM.Internals.read_tree(tree_id)
+    case get_object(tree_id) do
+      {:error, reason} -> {:error, reason}
+      object_data -> Spacetime.SCM.Internals.parse_tree(object_data)
+    end
   end
 
   def list_objects do
@@ -70,10 +83,7 @@ defmodule Spacetime.SCM.ObjectParser do
         |> Enum.map(fn file -> dir <> file end)
       end)
       |> Enum.map(fn object_id ->
-        case get_object_type(object_id) do
-          {:ok, type} -> {object_id, type}
-          _ -> {object_id, "unknown"}
-        end
+        {object_id, get_object_type(object_id)}
       end)
     else
       []
@@ -85,7 +95,10 @@ defmodule Spacetime.SCM.ObjectParser do
   end 
 
   def read_commit(commit_id) do
-    Spacetime.SCM.Internals.read_commit(commit_id)
+    case get_object(commit_id) do
+      {:error, reason} -> {:error, reason}
+      object_data -> Spacetime.SCM.Internals.parse_commit(object_data)
+    end
   end
 
   def get_commit_history(commit_id) do

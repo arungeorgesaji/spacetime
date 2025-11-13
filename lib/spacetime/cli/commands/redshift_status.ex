@@ -7,8 +7,8 @@ defmodule Spacetime.CLI.Commands.RedshiftStatus do
       IO.puts "Run 'spacetime init' to begin"
     end
     
-    # Have to actually implement logic to check with the commit history instead of just current files 
-
+    commit_history = get_commit_history()
+    
     files = find_code_files()
     
     if Enum.empty?(files) do
@@ -19,7 +19,7 @@ defmodule Spacetime.CLI.Commands.RedshiftStatus do
       
       files
       |> Enum.map(fn file ->
-        redshift = Spacetime.Physics.Redshift.calculate_redshift(file)
+        redshift = Spacetime.Physics.Redshift.calculate_redshift(file, commit_history)
         description = Spacetime.Physics.Redshift.describe_redshift(redshift)
         {file, redshift, description}
       end)
@@ -33,6 +33,8 @@ defmodule Spacetime.CLI.Commands.RedshiftStatus do
         IO.puts " #{progress_bar} #{percentage}% #{description}"
         IO.puts "    #{file}"
         
+        show_last_commit_info(file, commit_history)
+        
         if redshift > 0.5 do
           recommendations = Spacetime.Physics.Redshift.get_recommendations(file, redshift)
           IO.puts "    Recommendations:"
@@ -41,6 +43,39 @@ defmodule Spacetime.CLI.Commands.RedshiftStatus do
         
         IO.puts ""
       end)
+    end
+  end
+
+  defp get_commit_history do
+    objects = Spacetime.SCM.ObjectParser.list_objects()
+    
+    commit_ids = objects
+    |> Enum.filter(fn {_, type} -> type == "commit" end)
+    |> Enum.map(fn {id, _} -> id end)
+    
+    if Enum.any?(commit_ids) do
+      latest_commit = List.first(commit_ids)
+      Spacetime.SCM.ObjectParser.get_commit_history(latest_commit)
+    else
+      []
+    end
+  end
+
+  defp show_last_commit_info(file_path, commit_history) do
+    latest_commit = Spacetime.SCM.Internals.find_latest_commit_for_file(file_path, commit_history)
+    
+    case latest_commit do
+      %{id: commit_id, data: commit_data} ->
+        case commit_data[:timestamp] do
+          [timestamp | _] ->
+            {:ok, commit_time, _} = DateTime.from_iso8601(timestamp)
+            days_ago = DateTime.diff(DateTime.utc_now(), commit_time, :day)
+            IO.puts "    Last modified: #{days_ago} days ago (commit #{String.slice(commit_id, 0, 8)})"
+          _ ->
+            IO.puts "    Last modified: unknown"
+        end
+      _ ->
+        IO.puts "    Last modified: never committed"
     end
   end
 
@@ -60,7 +95,7 @@ defmodule Spacetime.CLI.Commands.RedshiftStatus do
           |> Enum.count(fn c -> c in 9..13 or c in 32..126 end)
           |> then(&(&1 / max(byte_size(content), 1)))
 
-        printable_ratio > 0.9
+        printable_ratio > 0.9  
       _ ->
         false
     end
