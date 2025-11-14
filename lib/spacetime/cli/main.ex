@@ -16,6 +16,17 @@ defmodule Spacetime.CLI.Main do
           about: "Initialize a new Spacetime repository",
           args: []
         ],
+        add: [
+          name: "add",
+          about: "Stage files for the next commit",
+          args: [
+            file: [
+              value_name: "FILE",
+              help: "File to stage",
+              required: true
+            ]
+          ]
+        ],
         status: [
           name: "status",
           about: "Show repository status",
@@ -74,7 +85,10 @@ defmodule Spacetime.CLI.Main do
     case Optimus.parse!(optimus, args) do
       {[:init], _parsed} ->
         init_repository()
-        
+
+      {[:add], parsed} ->
+        handle_add({[:add], parsed})
+
       {[:status], _parsed} ->
         show_status()
 
@@ -120,6 +134,7 @@ defmodule Spacetime.CLI.Main do
     IO.puts("Initializing new Spacetime repository...")
     File.mkdir_p!(".spacetime/objects")
     File.mkdir_p!(".spacetime/refs/heads")
+    File.mkdir_p!(".spacetime/staging")
     
     config = %{
       version: 1,
@@ -131,6 +146,16 @@ defmodule Spacetime.CLI.Main do
     
     File.write!(".spacetime/config", Jason.encode!(config, pretty: true))
     IO.puts("Spacetime repository initialized!")
+  end
+
+  def handle_add({[:add], %{args: %{file: file}}}) when is_binary(file) do
+    case Spacetime.Repo.stage_file(file) do
+      {:ok, path} ->
+        IO.puts("Staged: #{path}")
+
+      {:error, reason} ->
+        IO.puts("Error: #{reason}")
+    end
   end
   
   defp show_status do
