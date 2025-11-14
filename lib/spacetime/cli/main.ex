@@ -28,6 +28,17 @@ defmodule Spacetime.CLI.Main do
             ]
           ]
         ],
+        commit: [
+          name: "commit",
+          about: "Commit staged changes to the repository",
+          args: [
+            content: [
+              value_name: "MESSAGE",
+              help: "Commit message describing the changes",
+              required: true
+            ]
+          ]
+        ],
         status: [
           name: "status",
           about: "Show repository status",
@@ -90,6 +101,13 @@ defmodule Spacetime.CLI.Main do
       {[:add], parsed} ->
         handle_add({[:add], parsed})
 
+      {[:commit], %{args: %{content: message}}} ->
+        if is_binary(message) and message != "" do
+          Spacetime.CLI.Commands.CosmicCommit.run(message)
+        else
+          IO.puts("Commit message is required.\nUsage: spacetime commit \"message\"")
+        end
+
       {[:status], _parsed} ->
         show_status()
 
@@ -97,11 +115,11 @@ defmodule Spacetime.CLI.Main do
         Spacetime.CLI.Commands.RedshiftStatus.run()
 
       {[:"debug-object"], parsed} ->
-        content = parsed.args |> Map.values() |> List.first()
+        content = parsed.args.content
         test_object_storage(content)
 
       {[:"debug-store"], parsed} ->
-        content = parsed.args |> Map.values() |> List.first()
+        content = parsed.args.content
         test_blob_storage(content)
 
       {[:"debug-tree"], _parsed} ->
