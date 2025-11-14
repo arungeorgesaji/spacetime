@@ -39,6 +39,11 @@ defmodule Spacetime.CLI.Main do
             ]
           ]
         ],
+        log: [
+          name: "log",
+          about: "Show commit history",
+          args: []
+        ],
         status: [
           name: "status",
           about: "Show repository status",
@@ -107,6 +112,9 @@ defmodule Spacetime.CLI.Main do
         else
           IO.puts("Commit message is required.\nUsage: spacetime commit \"message\"")
         end
+
+      {[:log], _parsed} ->
+        show_log()
 
       {[:status], _parsed} ->
         show_status()
@@ -206,6 +214,30 @@ defmodule Spacetime.CLI.Main do
     |> Path.wildcard()
     |> Enum.filter(&File.regular?/1)
     |> Enum.each(&stage_file/1)
+  end
+
+  defp show_log do
+    IO.puts "Commit History"
+    IO.puts "=" <> String.duplicate("=", 40)
+    
+    head_ref = Spacetime.Repo.get_head()
+    ref_path = ".spacetime/#{head_ref}"
+    
+    if File.exists?(ref_path) do
+      latest_commit = File.read!(ref_path) |> String.trim()
+      history = Spacetime.SCM.ObjectParser.get_commit_history(latest_commit)
+      
+      Enum.each(history, fn %{id: commit_id, data: commit_data} ->
+        IO.puts "commit #{String.slice(commit_id, 0, 8)}"
+        IO.puts "Author: #{commit_data.author |> List.first()}"
+        IO.puts "Date:   #{commit_data.timestamp |> List.first()}"
+        IO.puts ""
+        IO.puts "    #{String.trim(commit_data.message)}"
+        IO.puts ""
+      end)
+    else
+      IO.puts "No commits yet"
+    end
   end
   
   defp show_status do
