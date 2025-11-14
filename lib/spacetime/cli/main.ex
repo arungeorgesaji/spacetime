@@ -44,6 +44,22 @@ defmodule Spacetime.CLI.Main do
           about: "Show commit history",
           args: []
         ],
+        branch: [
+          name: "branch",
+          about: "Create Or list branches",
+          args: [
+            name: [
+              value_name: "NAME",
+              help: "Name of the branch to create (if omitted, lists branches)",
+              required: false
+            ]
+          ]
+        ],
+        "mass-report": [
+          name: "mass-report",
+          about: "Show gravitational mass calculations for branches",
+          args: []
+        ],
         status: [
           name: "status",
           about: "Show repository status",
@@ -116,6 +132,21 @@ defmodule Spacetime.CLI.Main do
       {[:log], _parsed} ->
         show_log()
 
+      {[:branch], parsed} ->
+        case parsed.args.name do
+          nil -> 
+            list_branches()
+
+          "" -> 
+            list_branches()   
+
+          name when is_binary(name) -> 
+            create_branch(name)
+        end
+
+      {[:"mass-report"], _parsed} -> 
+        Spacetime.CLI.Commands.MassReport.run()
+
       {[:status], _parsed} ->
         show_status()
 
@@ -162,6 +193,10 @@ defmodule Spacetime.CLI.Main do
     File.mkdir_p!(".spacetime/objects")
     File.mkdir_p!(".spacetime/refs/heads")
     File.mkdir_p!(".spacetime/staging")
+
+    File.write!(".spacetime/HEAD", "ref: refs/heads/main")
+
+    File.write!(".spacetime/refs/heads/main", "")
     
     config = %{
       version: 1,
@@ -237,6 +272,41 @@ defmodule Spacetime.CLI.Main do
       end)
     else
       IO.puts "No commits yet"
+    end
+  end
+
+  defp list_branches do
+    branches = Spacetime.Repo.Branch.list_branches()
+    current = Spacetime.Repo.Branch.get_current_branch()
+    
+    IO.puts "Branches:"
+    Enum.each(branches, fn branch ->
+      if branch == current do
+        IO.puts "#{branch} (current)"
+      else
+        IO.puts "  #{branch}"
+      end
+    end)
+  end
+
+  defp create_branch(name) do
+    case Spacetime.Repo.Branch.create_branch(name) do
+      {:ok, branch_name} ->
+        IO.puts "Created branch: #{branch_name}"
+        
+        branch_ref_path = ".spacetime/refs/heads/#{branch_name}"
+        commit_id = File.read!(branch_ref_path) |> String.trim()
+        
+        if commit_id != "" do
+          history = Spacetime.Repo.Branch.get_branch_history(branch_name)
+          mass_data = Spacetime.Physics.Gravity.calculate_branch_mass(branch_name, history)
+          IO.puts "Initial mass: #{Float.round(mass_data.total, 2)}"
+        else
+          IO.puts "Initial mass: 0.0 (no commits yet)"
+        end
+        
+      {:error, reason} ->
+        IO.puts "Error: #{reason}"
     end
   end
   
