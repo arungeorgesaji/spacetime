@@ -18,12 +18,13 @@ defmodule Spacetime.CLI.Main do
         ],
         add: [
           name: "add",
-          about: "Stage files for the next commit",
+          about: "Stage files or directories",
           args: [
-            file: [
-              value_name: "FILE",
-              help: "File to stage",
-              required: true
+            files: [
+              value_name: "FILES",
+              help: "Files or directories to stage",
+              required: true,
+              multiple: true
             ]
           ]
         ],
@@ -148,14 +149,45 @@ defmodule Spacetime.CLI.Main do
     IO.puts("Spacetime repository initialized!")
   end
 
-  def handle_add({[:add], %{args: %{file: file}}}) when is_binary(file) do
-    case Spacetime.Repo.stage_file(file) do
+  def handle_add({[:add], %{args: %{files: files}}}) do
+    files =
+      case files do
+        list when is_list(list) -> list
+        single when is_binary(single) -> [single]
+      end
+
+    Enum.each(files, &stage_path/1)
+  end
+
+  defp stage_path(path) do
+    cond do
+      File.regular?(path) ->
+        stage_file(path)
+
+      File.dir?(path) ->
+        stage_directory(path)
+
+      true ->
+        IO.puts("Error: #{path} does not exist")
+    end
+  end
+
+  defp stage_file(path) do
+    case Spacetime.Repo.stage_file(path) do
       {:ok, path} ->
         IO.puts("Staged: #{path}")
 
       {:error, reason} ->
-        IO.puts("Error: #{reason}")
+        IO.puts("Error staging #{path}: #{reason}")
     end
+  end
+
+  defp stage_directory(dir) do
+    dir
+    |> Path.join("**/*")
+    |> Path.wildcard()
+    |> Enum.filter(&File.regular?/1)
+    |> Enum.each(&stage_file/1)
   end
   
   defp show_status do
