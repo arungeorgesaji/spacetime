@@ -194,7 +194,7 @@ defmodule Spacetime.Physics.EventHorizon do
     - Prepare roll-forward strategy
     """
     
-    File.write!("event_horizon_#{String.slice(commit_id, 0, 8)}.md", guidance)
+    File.write!(".spacetime/migration_guides/event_horizon_#{String.slice(commit_id, 0, 8)}.md", guidance)
   end
 
   def verify_migration(commit_id) do

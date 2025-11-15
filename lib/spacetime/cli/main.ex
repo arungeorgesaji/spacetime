@@ -222,6 +222,7 @@ defmodule Spacetime.CLI.Main do
     File.mkdir_p!(".spacetime/objects")
     File.mkdir_p!(".spacetime/refs/heads")
     File.mkdir_p!(".spacetime/staging")
+    File.mkdir_p!(".spacetime/migration_guides")
 
     File.write!(".spacetime/HEAD", "ref: refs/heads/main")
 
