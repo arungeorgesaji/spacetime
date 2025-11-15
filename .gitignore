@@ -1,3 +1,4 @@
+temp/
 todo
 /_build
 /deps
@@ -8,3 +9,4 @@ todo
 test.txt
 test.js
 old_code.py 
+breaking_api.ex

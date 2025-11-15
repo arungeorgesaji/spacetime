@@ -102,6 +102,28 @@ defmodule Spacetime.SCM.Internals do
   end
 
   def create_commit(%{tree: tree_id, message: message} = params) do
+    is_event_horizon = Map.get(params, :event_horizon, false)
+    commitment = Map.get(params, :commitment)
+
+    message =
+      if is_event_horizon do
+        """
+        #{message}
+
+        EVENT HORIZON COMMIT
+        This commit represents a point of no return.
+        Once merged, it cannot be reverted due to:
+        - Breaking API changes
+        - Database migrations
+        - Major structural refactoring
+
+        Commitment: #{commitment}
+        Proceed with extreme caution!
+        """
+      else
+        message
+      end
+
     headers = [
       "tree #{tree_id}",
       "author #{params[:author] || "Unknown <unknown@localhost>"}",
@@ -120,7 +142,7 @@ defmodule Spacetime.SCM.Internals do
         Enum.flat_map(entries, fn entry ->
           case entry.type do
             :blob -> [entry.name]
-            :tree -> [] 
+            :tree -> []
           end
         end)
       _ -> []
@@ -134,11 +156,18 @@ defmodule Spacetime.SCM.Internals do
       "gravity-mass 0.0"
     ]
 
+    headers = if is_event_horizon do
+      headers ++ ["event-horizon true", "commitment #{commitment}"]
+    else
+      headers
+    end
+
     headers_str = Enum.join(headers, "\n")
     commit_content = headers_str <> "\n\n" <> message
 
     header = "commit #{byte_size(commit_content)}\0"
     commit_data = header <> commit_content
+
     Spacetime.SCM.ObjectParser.store_object(commit_data)
   end
 
@@ -199,19 +228,33 @@ defmodule Spacetime.SCM.Internals do
 
   defp parse_commit_content(content) do
     [headers_part, message] = String.split(content, "\n\n", parts: 2)
-    
-    headers = headers_part
-    |> String.split("\n")
-    |> Enum.reduce(%{}, fn line, acc ->
-      case String.split(line, " ", parts: 2) do
-        [key, value] ->
-          key = String.to_atom(key)
-          Map.update(acc, key, [value], &(&1 ++ [value]))
-        _ ->
-          acc
-      end
-    end)
-    |> Map.update(:message, message, fn _ -> message end)
+
+    headers =
+      headers_part
+      |> String.split("\n")
+      |> Enum.reduce(%{}, fn line, acc ->
+        case String.split(line, " ", parts: 2) do
+          [key_raw, value] ->
+            key =
+              key_raw
+              |> String.trim()
+              |> String.replace("-", "_")
+              |> String.to_atom()
+
+            parsed_value =
+              case String.trim(value) do
+                "true" -> true
+                "false" -> false
+                v -> v
+              end
+
+            Map.update(acc, key, [parsed_value], &(&1 ++ [parsed_value]))
+
+          _ ->
+            acc
+        end
+      end)
+      |> Map.put(:message, message)
 
     {:ok, headers}
   end

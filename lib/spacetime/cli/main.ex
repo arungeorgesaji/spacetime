@@ -37,6 +37,14 @@ defmodule Spacetime.CLI.Main do
               help: "Commit message describing the changes",
               required: true
             ]
+          ],
+          flags: [
+            event_horizon: [
+              short: "-e",
+              long: "--event-horizon",
+              help: "Mark this as an irreversible Event Horizon commit",
+              value: false
+            ]
           ]
         ],
         log: [
@@ -68,6 +76,11 @@ defmodule Spacetime.CLI.Main do
         redshift: [
           name: "redshift",
           about: "Show code aging and readability analysis",
+          args: []
+        ],
+        "event-horizon": [
+          name: "event-horizon",
+          about: "Manage and inspect Event Horizon commits",
           args: []
         ],
         "debug-object": [
@@ -122,9 +135,22 @@ defmodule Spacetime.CLI.Main do
       {[:add], parsed} ->
         handle_add({[:add], parsed})
 
-      {[:commit], %{args: %{content: message}}} ->
+      {[:commit], parsed} ->
+        message = parsed.args.content
+        event_horizon = parsed.flags[:event_horizon] || false
+
         if is_binary(message) and message != "" do
-          Spacetime.CLI.Commands.CosmicCommit.run(message)
+          if event_horizon do
+            staged_files = Spacetime.Repo.get_staged_files()
+            file_paths = Enum.map(staged_files, & &1["path"])
+
+            Spacetime.CLI.Commands.EventHorizon.create_event_horizon(
+              message,
+              file_paths
+            )
+          else
+            Spacetime.CLI.Commands.CosmicCommit.run(message)
+          end
         else
           IO.puts("Commit message is required.\nUsage: spacetime commit \"message\"")
         end
@@ -152,6 +178,9 @@ defmodule Spacetime.CLI.Main do
 
       {[:redshift], _parsed} ->
         Spacetime.CLI.Commands.RedshiftStatus.run()
+
+      {[:"event-horizon"], _parsed} ->
+        Spacetime.CLI.Commands.EventHorizon.run()
 
       {[:"debug-object"], parsed} ->
         content = parsed.args.content
