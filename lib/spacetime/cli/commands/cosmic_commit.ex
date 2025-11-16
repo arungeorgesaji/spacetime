@@ -94,7 +94,7 @@ defmodule Spacetime.CLI.Commands.CosmicCommit do
     "Cosmic Developer <cosmic@spacetime.dev>"
   end
 
-  defp calculate_initial_redshift(staged_files, commit_id) do
+  defp calculate_initial_redshift(staged_files, _commit_id) do
     IO.puts "Calculating initial redshift values..."
 
     Enum.each(staged_files, fn file ->
@@ -106,7 +106,7 @@ defmodule Spacetime.CLI.Commands.CosmicCommit do
     end)
   end
 
-  defp finalize_commit(commit_id, staged_files, message, opts \\ []) do
+  defp finalize_commit(_commit_id, staged_files, message, opts \\ []) do
     event_horizon = Keyword.get(opts, :event_horizon, false)
     
     tree_entries = Enum.map(staged_files, fn file ->
@@ -161,10 +161,6 @@ defmodule Spacetime.CLI.Commands.CosmicCommit do
     end
     
     final_commit_id
-  end
-
-  defp get_author_info do
-    "Cosmic Developer <cosmic@spacetime.dev>"
   end
 
   defp get_last_commit do

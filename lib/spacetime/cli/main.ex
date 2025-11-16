@@ -103,6 +103,61 @@ defmodule Spacetime.CLI.Main do
             ]
           ]
         ],
+        "wormhole-merge": [
+          name: "wormhole-merge",
+          about: "Merge branches while preserving both feature implementations",
+          args: [
+            source: [
+              value_name: "SOURCE_BRANCH",
+              help: "Source branch to merge from",
+              required: true
+            ],
+            target: [
+              value_name: "TARGET_BRANCH", 
+              help: "Target branch to merge into",
+              required: true
+            ]
+          ],
+          options: [
+            feature_name: [
+              short: "-f",
+              long: "--feature-name",
+              help: "Name for the feature flag",
+              value_name: "FEATURE_NAME",
+              required: false,
+              parser: :string
+            ],
+            strategy: [
+              short: "-s",
+              long: "--strategy",
+              help: "Merge strategy: feature-flag, environment, time, user",
+              value_name: "STRATEGY",
+              required: false,
+              parser: :string
+            ]
+          ]
+        ],
+        "wormhole-check": [
+          name: "wormhole-check", 
+          about: "Check if branches can be wormhole merged",
+          args: [
+            source: [
+              value_name: "SOURCE_BRANCH",
+              help: "Source branch",
+              required: true  
+            ],
+            target: [
+              value_name: "TARGET_BRANCH",
+              help: "Target branch", 
+              required: true
+            ]
+          ]
+        ],
+        "wormhole-strategies": [
+          name: "wormhole-strategies",
+          about: "List available wormhole merge strategies", 
+          args: []
+        ],
         "debug-object": [
           name: "debug-object",
           about: "Test object storage and retrieval in Spacetime",
@@ -215,6 +270,26 @@ defmodule Spacetime.CLI.Main do
         else
           Spacetime.CLI.Commands.DarkMatter.run(files)
         end
+
+      {[:"wormhole-merge"], parsed} ->
+        options = %{
+          feature_name: parsed.options[:feature_name],
+          strategy: parsed.options[:strategy]  
+        }
+        |> Enum.reject(fn {_k, v} -> is_nil(v) end)  
+        |> Map.new()
+
+        Spacetime.CLI.Commands.WormholeMerge.run(
+          parsed.args.source,
+          parsed.args.target,
+          options
+        )
+
+      {[:"wormhole-check"], parsed} ->
+        Spacetime.CLI.Commands.WormholeMerge.check_compatibility(parsed.args.source, parsed.args.target)
+
+      {[:"wormhole-strategies"], _parsed} ->
+        Spacetime.CLI.Commands.WormholeMerge.list_strategies()
 
       {[:"debug-object"], parsed} ->
         content = parsed.args.content

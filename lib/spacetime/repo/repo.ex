@@ -57,7 +57,7 @@ defmodule Spacetime.Repo do
       staging_dir
       |> File.ls!()
       |> Enum.map(fn encoded_path ->
-        path = Base.url_decode64!(encoded_path)
+        _path = Base.url_decode64!(encoded_path)
         content = File.read!(Path.join(staging_dir, encoded_path))
         Jason.decode!(content)
       end)

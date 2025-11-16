@@ -16,7 +16,15 @@ defmodule Spacetime.SCM.ObjectParser do
     object_id
   end
 
-  def get_object(object_id) do
+  def get_object(object_id) when is_binary(object_id) and byte_size(object_id) == 0 do
+    {:error, "Empty object ID"}
+  end
+
+  def get_object(nil) do
+    {:error, "Nil object ID"}
+  end
+
+  def get_object(object_id) when is_binary(object_id) and byte_size(object_id) > 0 do
     dir = String.slice(object_id, 0, 2)
     file = String.slice(object_id, 2, String.length(object_id) - 2)
     object_path = Path.join([@object_dir, dir, file])

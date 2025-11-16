@@ -216,7 +216,7 @@ defmodule Spacetime.Physics.DarkMatter do
     end)
   end
 
-  defp is_config_key_used?(key, config_file_path) do
+  defp is_config_key_used?(key, _config_file_path) do
     code_files = find_code_files()
     
     Enum.any?(code_files, fn code_file ->
@@ -326,7 +326,7 @@ defmodule Spacetime.Physics.DarkMatter do
     end
   end
 
-  defp is_unreachable_line?(line, line_number, all_lines) do
+  defp is_unreachable_line?(_line, line_number, all_lines) do
     previous_lines = Enum.take(all_lines, line_number - 1)
     
     Enum.any?(previous_lines, fn prev_line ->
