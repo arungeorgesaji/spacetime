@@ -1,18 +1,18 @@
 defmodule Spacetime.Physics.DarkMatter do
-  def scan_dark_matter do
+  def scan_dark_matter(specific_files \\ nil) do
     IO.puts "Scanning for dark matter..."
     
     %{
-      dead_functions: find_dead_functions(),
-      unused_imports: find_unused_imports(),
-      orphaned_configs: find_orphaned_configs(),
-      unused_dependencies: find_unused_dependencies(),
-      unreachable_code: find_unreachable_code()
+      dead_functions: find_dead_functions(specific_files),
+      unused_imports: find_unused_imports(specific_files),
+      orphaned_configs: find_orphaned_configs(specific_files),
+      unused_dependencies: find_unused_dependencies(specific_files),
+      unreachable_code: find_unreachable_code(specific_files)
     }
   end
 
-  def find_dead_functions do
-    code_files = find_code_files()
+  def find_dead_functions(specific_files \\ nil) do
+    code_files = get_code_files(specific_files)
     
     Enum.flat_map(code_files, fn file_path ->
       find_dead_functions_in_file(file_path)
@@ -101,8 +101,8 @@ defmodule Spacetime.Physics.DarkMatter do
     |> Enum.uniq()
   end
 
-  def find_unused_imports do
-    code_files = find_code_files()
+  def find_unused_imports(specific_files \\ nil) do
+    code_files = get_code_files(specific_files)
     
     Enum.flat_map(code_files, fn file_path ->
       find_unused_imports_in_file(file_path)
@@ -169,8 +169,8 @@ defmodule Spacetime.Physics.DarkMatter do
     |> Enum.uniq()
   end
 
-  def find_orphaned_configs do
-    config_files = find_config_files()
+  def find_orphaned_configs(specific_files \\ nil) do
+    config_files = get_config_files(specific_files)
     
     Enum.flat_map(config_files, fn file_path ->
       find_orphaned_configs_in_file(file_path)
@@ -235,8 +235,8 @@ defmodule Spacetime.Physics.DarkMatter do
     end)
   end
 
-  def find_unused_dependencies do
-    dependency_files = find_dependency_files()
+  def find_unused_dependencies(specific_files \\ nil) do
+    dependency_files = get_dependency_files(specific_files)
     
     Enum.flat_map(dependency_files, fn file_path ->
       find_unused_dependencies_in_file(file_path)
@@ -300,8 +300,8 @@ defmodule Spacetime.Physics.DarkMatter do
     end)
   end
 
-  def find_unreachable_code do
-    code_files = find_code_files()
+  def find_unreachable_code(specific_files \\ nil) do
+    code_files = get_code_files(specific_files)
     
     Enum.flat_map(code_files, fn file_path ->
       find_unreachable_code_in_file(file_path)
@@ -332,6 +332,45 @@ defmodule Spacetime.Physics.DarkMatter do
     Enum.any?(previous_lines, fn prev_line ->
       String.contains?(prev_line, ["return", "raise", "throw", "exit"]) and
       not String.contains?(prev_line, ["def", "function", "class"])  
+    end)
+  end
+
+  defp get_code_files(nil) do
+    find_code_files()
+  end
+
+  defp get_code_files(specific_files) do
+    specific_files
+    |> Enum.filter(&File.regular?/1)
+    |> Enum.filter(fn file ->
+      ext = Path.extname(file)
+      ext in [".ex", ".exs", ".js", ".ts", ".py", ".rb", ".java", ".go", ".rs", ".cpp", ".c", ".h"]
+    end)
+  end
+
+  defp get_config_files(nil) do
+    find_config_files()
+  end
+
+  defp get_config_files(specific_files) do
+    specific_files
+    |> Enum.filter(&File.regular?/1)
+    |> Enum.filter(fn file ->
+      ext = Path.extname(file)
+      ext in [".exs", ".json", ".yml", ".yaml", ".config", ".env"]
+    end)
+  end
+
+  defp get_dependency_files(nil) do
+    find_dependency_files()
+  end
+
+  defp get_dependency_files(specific_files) do
+    specific_files
+    |> Enum.filter(&File.exists?/1)
+    |> Enum.filter(fn file ->
+      basename = Path.basename(file)
+      basename in ["mix.exs", "package.json", "requirements.txt", "Cargo.toml", "pom.xml", "build.gradle"]
     end)
   end
 

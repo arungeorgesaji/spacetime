@@ -1,10 +1,17 @@
 defmodule Spacetime.CLI.Commands.DarkMatter do
-  def run do
+  def run(specific_files \\ nil) do
     IO.puts "Scanning repository for dark matter..."
+    
+    if specific_files do
+      IO.puts "Scanning specific files: #{Enum.join(specific_files, ", ")}"
+    else
+      IO.puts "Scanning all files in repository..."
+    end
+    
     IO.puts "Dark matter: Code that exists but has no observable effects"
     IO.puts "=" <> String.duplicate("=", 60)
     
-    dark_matter = Spacetime.Physics.DarkMatter.scan_dark_matter()
+    dark_matter = Spacetime.Physics.DarkMatter.scan_dark_matter(specific_files)
     
     total_findings = 
       length(dark_matter.dead_functions) +
@@ -110,10 +117,14 @@ defmodule Spacetime.CLI.Commands.DarkMatter do
     IO.puts "\nRun 'spacetime dark-matter --cleanup' to automatically remove dark matter"
   end
 
-  def cleanup do
+  def cleanup(specific_files \\ nil) do
     IO.puts "Cleaning up dark matter..."
     
-    dark_matter = Spacetime.Physics.DarkMatter.scan_dark_matter()
+    if specific_files do
+      IO.puts "Cleaning specific files: #{Enum.join(specific_files, ", ")}"
+    end
+    
+    dark_matter = Spacetime.Physics.DarkMatter.scan_dark_matter(specific_files)
     
     cleanup_count = 
       cleanup_dead_functions(dark_matter.dead_functions) +

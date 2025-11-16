@@ -86,7 +86,14 @@ defmodule Spacetime.CLI.Main do
         "dark-matter": [
           name: "dark-matter",
           about: "Detect unused code, imports, and configurations",
-          args: [],
+          args: [
+            files: [
+              value_name: "FILES",
+              help: "Specific files to scan (optional, scans all if not provided)",
+              required: false,
+              multiple: true
+            ]
+          ],
           flags: [
             cleanup: [
               short: "-c",
@@ -196,10 +203,17 @@ defmodule Spacetime.CLI.Main do
         Spacetime.CLI.Commands.EventHorizon.run()
 
       {[:"dark-matter"], parsed} ->
+        files = case parsed.args[:files] do
+          nil -> nil
+          list when is_list(list) -> list
+          single when is_binary(single) -> [single]
+          _ -> nil
+        end
+        
         if parsed.flags.cleanup do
-          Spacetime.CLI.Commands.DarkMatter.cleanup()
+          Spacetime.CLI.Commands.DarkMatter.cleanup(files)
         else
-          Spacetime.CLI.Commands.DarkMatter.run()
+          Spacetime.CLI.Commands.DarkMatter.run(files)
         end
 
       {[:"debug-object"], parsed} ->
