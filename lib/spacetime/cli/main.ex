@@ -83,6 +83,19 @@ defmodule Spacetime.CLI.Main do
           about: "Manage and inspect Event Horizon commits",
           args: []
         ],
+        "dark-matter": [
+          name: "dark-matter",
+          about: "Detect unused code, imports, and configurations",
+          args: [],
+          flags: [
+            cleanup: [
+              short: "-c",
+              long: "--cleanup",
+              help: "Automatically remove detected dark matter",
+              value: false
+            ]
+          ]
+        ],
         "debug-object": [
           name: "debug-object",
           about: "Test object storage and retrieval in Spacetime",
@@ -181,6 +194,13 @@ defmodule Spacetime.CLI.Main do
 
       {[:"event-horizon"], _parsed} ->
         Spacetime.CLI.Commands.EventHorizon.run()
+
+      {[:"dark-matter"], parsed} ->
+        if parsed.flags.cleanup do
+          Spacetime.CLI.Commands.DarkMatter.cleanup()
+        else
+          Spacetime.CLI.Commands.DarkMatter.run()
+        end
 
       {[:"debug-object"], parsed} ->
         content = parsed.args.content
