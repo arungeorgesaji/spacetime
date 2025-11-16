@@ -13,3 +13,5 @@ breaking_api.ex
 unused.ex
 feature_a.txt 
 feature_b.txt
+feature_flags_*.ex
+feature_flags_*.js
