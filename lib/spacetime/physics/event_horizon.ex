@@ -1,4 +1,7 @@
 defmodule Spacetime.Physics.EventHorizon do
+  @code_extensions [
+    ".ex", ".exs", ".erl", ".beam", ".js", ".jsx", ".ts", ".tsx", ".py", ".rb", ".java", ".kt", ".scala", ".groovy", ".go", ".rs", ".c", ".h", ".cpp", ".hpp", ".cc", ".cs", ".php", ".swift", ".m", ".dart", ".lua", ".sh", ".bash", ".yaml", ".yml", ".json", ".lock", ".toml", ".ini", ".sql"                   ]
+
   def should_be_event_horizon?(commit_id, changes) do
     breaking_changes = detect_breaking_changes(changes)
     migration_changes = detect_migration_changes(changes)
@@ -7,28 +10,65 @@ defmodule Spacetime.Physics.EventHorizon do
     breaking_changes or migration_changes or major_refactor
   end
 
-  defp detect_breaking_changes(changes) do
+  def detect_breaking_changes(changes) do
     Enum.any?(changes, fn {file_path, _content} ->
-      String.ends_with?(file_path, [".ex", ".exs", ".js", ".ts", ".py", ".rb", ".java"]) and
-      contains_breaking_patterns?(file_path)
+      Enum.any?(@code_extensions, &String.ends_with?(file_path, &1)) and
+        contains_breaking_patterns?(file_path)
     end)
   end
 
   defp contains_breaking_patterns?(file_path) do
     if File.exists?(file_path) do
       content = File.read!(file_path)
-      
+
       breaking_patterns = [
-        ~r/defmodule.*API/,
-        ~r/defmodule.*Client/,
-        ~r/defmodule.*Interface/,
-        ~r/@deprecated.*true/,
-        ~r/raise.*NotImplementedError/,
-        ~r/def.*obsolete/,
+
         ~r/BREAKING CHANGE/i,
-        ~r/Major.*version/i
+        ~r/MAJOR CHANGE/i,
+        ~r/Major.*version/i,
+        ~r/remove.*API/i,
+        ~r/rename.*API/i,
+        ~r/deprecate.*API/i,
+
+        ~r/@deprecated/i,
+        ~r/@obsolete/i,
+        ~r/@removal/i,
+        ~r/TODO:? remove/i,
+
+        ~r/def.*obsolete/,
+        ~r/defp.*remove/,
+        ~r/raise.*NotImplementedError/,
+        ~r/Protocol.*changed/i,
+        ~r/behaviour.*removed/i,
+
+        ~r/pub\s+trait.*removed/,
+        ~r/pub\s+fn.*changed/,
+        ~r/deprecated.*true/i,
+
+        ~r/def\s+.*removed/,
+        ~r/class\s+.*removed/,
+        ~r/@deprecated/,
+        ~r/@abstractmethod.*changed/,
+
+        ~r/public\s+interface.*removed/,
+        ~r/public\s+class.*removed/,
+        ~r/@Deprecated/,
+        ~r/throws\s+.*RemovedException/,
+
+        ~r/export\s+interface.*removed/,
+        ~r/export\s+function.*removed/,
+        ~r/breaking api/i,
+        ~r/remove.*endpoint/i,
+
+        ~r/router.*delete/,        
+        ~r/remove_route/,          
+        ~r/schema.*change/,        
+        ~r/migration.*drop/i,
+
+        ~r/func\s+\w+.*removed/,
+        ~r/interface\s+\w+.*removed/
       ]
-      
+
       Enum.any?(breaking_patterns, &Regex.match?(&1, content))
     else
       false
