@@ -61,10 +61,6 @@ defmodule Spacetime.CLI.Commands.CosmicCommit do
         finalize_commit(commit_id, staged_files, message, event_horizon: false)
       end
 
-    update_branch_ref(commit_id)
-
-    Spacetime.Repo.clear_staging()
-
     event_horizon_indicator = if event_horizon, do: " ⚫", else: ""
 
     IO.puts "Created commit#{event_horizon_indicator}: #{String.slice(commit_id, 0, 8)}"

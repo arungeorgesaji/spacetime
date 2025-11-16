@@ -31,11 +31,15 @@ defmodule Spacetime.Repo.Branch do
     end
   end
 
-  def get_current_branch do
-    head_content = File.read!(".spacetime/HEAD") |> String.trim()
-    case head_content do
-      "ref: " <> ref -> String.replace(ref, "refs/heads/", "")
-      _ -> "detached"
+  def get_current_branch() do
+    case File.read(".spacetime/HEAD") do
+      {:ok, content} ->
+        content
+        |> String.trim()
+        |> String.replace("ref: refs/heads/", "")
+        
+      {:error, _} ->
+        "main" 
     end
   end
 
@@ -48,6 +52,18 @@ defmodule Spacetime.Repo.Branch do
     case get_branch_commit(branch_name) do
       nil -> []
       commit_id -> Spacetime.SCM.ObjectParser.get_commit_history(commit_id)
+    end
+  end
+
+  def checkout_branch(branch_name) do
+    branches = list_branches()
+    
+    if branch_name in branches do
+      head_content = "ref: refs/heads/#{branch_name}"
+      File.write!(".spacetime/HEAD", head_content)
+      {:ok, branch_name}
+    else
+      {:error, "branch '#{branch_name}' not found"}
     end
   end
 end

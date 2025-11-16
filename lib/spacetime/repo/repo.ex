@@ -25,6 +25,7 @@ defmodule Spacetime.Repo do
 
   def get_head do
     case File.read(".spacetime/HEAD") do
+      {:ok, "ref: " <> ref} -> String.trim(ref)
       {:ok, ref} -> String.trim(ref)
       _ -> "refs/heads/main"
     end
@@ -63,6 +64,16 @@ defmodule Spacetime.Repo do
       end)
     else
       []
+    end
+  end
+
+  def get_branch_commit(branch_name) do
+    branch_path = ".spacetime/refs/heads/#{branch_name}"
+    
+    if File.exists?(branch_path) do
+      File.read!(branch_path) |> String.trim()
+    else
+      ""
     end
   end
 

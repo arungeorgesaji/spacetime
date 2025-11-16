@@ -63,6 +63,17 @@ defmodule Spacetime.CLI.Main do
             ]
           ]
         ],
+        checkout: [
+          name: "checkout",
+          about: "Switch to a different branch",
+          args: [
+            branch: [
+              value_name: "BRANCH_NAME",
+              help: "Name of the branch to switch to",
+              required: true
+            ]
+          ]
+        ],
         "mass-report": [
           name: "mass-report",
           about: "Show gravitational mass calculations for branches",
@@ -245,6 +256,10 @@ defmodule Spacetime.CLI.Main do
             create_branch(name)
         end
 
+      {[:"checkout"], parsed} ->
+        branch_name = parsed.args.branch
+        checkout_branch(branch_name)
+
       {[:"mass-report"], _parsed} -> 
         Spacetime.CLI.Commands.MassReport.run()
 
@@ -306,7 +321,7 @@ defmodule Spacetime.CLI.Main do
         test_commit_storage()
 
       {[:"debug-history"], _parsed} ->
-        test_commit_storage()
+        Spacetime.SCM.ObjectParser.debug_history()
 
       {[:"debug-list"], _parsed} ->
         list_objects()
@@ -421,7 +436,7 @@ defmodule Spacetime.CLI.Main do
     IO.puts "Branches:"
     Enum.each(branches, fn branch ->
       if branch == current do
-        IO.puts "#{branch} (current)"
+        IO.puts "* #{branch}"
       else
         IO.puts "  #{branch}"
       end
@@ -433,10 +448,13 @@ defmodule Spacetime.CLI.Main do
       {:ok, branch_name} ->
         IO.puts "Created branch: #{branch_name}"
         
-        branch_ref_path = ".spacetime/refs/heads/#{branch_name}"
-        commit_id = File.read!(branch_ref_path) |> String.trim()
+        current_branch = Spacetime.Repo.Branch.get_current_branch()
+        current_commit = Spacetime.Repo.Branch.get_branch_commit(current_branch)
         
-        if commit_id != "" do
+        branch_ref_path = ".spacetime/refs/heads/#{branch_name}"
+        File.write!(branch_ref_path, current_commit)
+        
+        if current_commit != "" do
           history = Spacetime.Repo.Branch.get_branch_history(branch_name)
           mass_data = Spacetime.Physics.Gravity.calculate_branch_mass(branch_name, history)
           IO.puts "Initial mass: #{Float.round(mass_data.total, 2)}"
@@ -446,6 +464,21 @@ defmodule Spacetime.CLI.Main do
         
       {:error, reason} ->
         IO.puts "Error: #{reason}"
+    end
+  end
+
+  defp checkout_branch(branch_name) do
+    case Spacetime.Repo.Branch.checkout_branch(branch_name) do
+      {:ok, current_branch} ->
+        IO.puts("Switched to branch: #{current_branch}")
+        
+        head_content = "ref: refs/heads/#{current_branch}"
+        File.write!(".spacetime/HEAD", head_content)
+        
+        IO.puts("Branch switched successfully to #{current_branch}")
+
+      {:error, reason} ->
+        IO.puts("Error switching to branch #{branch_name}: #{reason}")
     end
   end
   
