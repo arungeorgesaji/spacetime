@@ -169,6 +169,59 @@ defmodule Spacetime.CLI.Main do
           about: "List available wormhole merge strategies", 
           args: []
         ],
+        "quantum-entangle": [
+          name: "quantum-entangle",
+          about: "Create quantum entanglement between two branches",
+          args: [
+            branch1: [
+              value_name: "BRANCH_1",
+              help: "First branch to entangle",
+              required: true
+            ],
+            branch2: [
+              value_name: "BRANCH_2",
+              help: "Second branch to entangle",
+              required: true
+            ]
+          ],
+          flags: [
+            strength: [
+              short: "-s",
+              long: "--strength",
+              help: "Entanglement strength (weak, medium, strong)",
+              value_name: "STRENGTH",
+              parser: :string,
+              default: "medium"
+            ],
+            bidirectional: [
+              short: "-b",
+              long: "--bidirectional",
+              help: "Enable bidirectional synchronization",
+              value: false
+            ]
+          ]
+        ],
+        "quantum-disentangle": [
+          name: "quantum-disentangle",
+          about: "Remove quantum entanglement between branches",
+          args: [
+            branch1: [
+              value_name: "BRANCH_1",
+              help: "First branch in entanglement",
+              required: true
+            ],
+            branch2: [
+              value_name: "BRANCH_2",
+              help: "Second branch in entanglement",
+              required: true
+            ]
+          ]
+        ],
+        "quantum-status": [
+          name: "quantum-status",
+          about: "Show current quantum entanglements",
+          args: []
+        ],
         "debug-object": [
           name: "debug-object",
           about: "Test object storage and retrieval in Spacetime",
@@ -226,6 +279,8 @@ defmodule Spacetime.CLI.Main do
         event_horizon = parsed.flags[:event_horizon] || false
 
         if is_binary(message) and message != "" do
+          current_branch = Spacetime.Repo.Branch.get_current_branch()
+          
           if event_horizon do
             staged_files = Spacetime.Repo.get_staged_files()
             file_paths = Enum.map(staged_files, & &1["path"])
@@ -235,7 +290,15 @@ defmodule Spacetime.CLI.Main do
               file_paths
             )
           else
-            Spacetime.CLI.Commands.CosmicCommit.run(message)
+            result = Spacetime.CLI.Commands.CosmicCommit.run(message)
+            
+            case result do
+              {:ok, commit_id} ->
+                Spacetime.Physics.Quantum.synchronize_entanglements(current_branch, commit_id)
+              _ -> :noop
+            end
+            
+            result
           end
         else
           IO.puts("Commit message is required.\nUsage: spacetime commit \"message\"")
@@ -305,6 +368,26 @@ defmodule Spacetime.CLI.Main do
 
       {[:"wormhole-strategies"], _parsed} ->
         Spacetime.CLI.Commands.WormholeMerge.list_strategies()
+      
+      {[:"quantum-entangle"], parsed} ->
+        options = %{
+          strength: parsed.flags[:strength] || "medium",
+          bidirectional: parsed.flags[:bidirectional] || false
+        }
+        Spacetime.CLI.Commands.QuantumEntanglement.entangle(
+          parsed.args.branch1, 
+          parsed.args.branch2, 
+          options
+        )
+
+      {[:"quantum-disentangle"], parsed} ->
+        Spacetime.CLI.Commands.QuantumEntanglement.disentangle(
+          parsed.args.branch1, 
+          parsed.args.branch2
+        )
+
+      {[:"quantum-status"], _parsed} ->
+        Spacetime.CLI.Commands.QuantumEntanglement.status()
 
       {[:"debug-object"], parsed} ->
         content = parsed.args.content
