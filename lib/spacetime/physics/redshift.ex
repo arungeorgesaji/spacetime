@@ -83,4 +83,154 @@ defmodule Spacetime.Physics.Redshift do
         ["Immediate refactoring required", "Consider complete rewrite"] ++ base_recommendations
     end
   end
+
+  def analyze_repository_redshift(_options \\ %{}) do
+    files = find_repository_files()
+    
+    files_data = Enum.map(files, fn file_path ->
+      analyze_file_redshift(file_path)
+    end)
+    |> Enum.filter(& &1) 
+    
+    summary = calculate_redshift_summary(files_data)
+    
+    %{
+      files: files_data,
+      summary: summary,
+      analyzed_at: DateTime.utc_now() |> DateTime.to_iso8601()
+    }
+  end
+
+  defp find_repository_files do
+    patterns = ["**/*"]
+    
+    patterns
+    |> Enum.flat_map(&Path.wildcard/1)
+    |> Enum.filter(&File.regular?/1)
+    |> Enum.reject(&String.starts_with?(&1, ".spacetime/"))
+  end
+
+  defp analyze_file_redshift(file_path) do
+    case File.stat(file_path) do
+      {:ok, stat} ->
+        age_days = calculate_file_age_days(stat.mtime)
+        change_count = get_file_change_count(file_path)
+        redshift = calculate_redshift(file_path, [])
+        factors = analyze_redshift_factors(file_path, age_days, change_count)
+        
+        %{
+          path: file_path,
+          redshift: redshift,
+          age_days: age_days,
+          change_count: change_count,
+          factors: factors,
+          last_change: get_last_change_date(file_path)
+        }
+        
+      {:error, _} ->
+        nil
+    end
+  end
+
+  defp calculate_redshift_summary(files_data) do
+    redshifts = Enum.map(files_data, & &1.redshift)
+    total_files = length(files_data)
+    
+    if total_files > 0 do
+      avg_redshift = Enum.sum(redshifts) / total_files
+      max_redshift = Enum.max(redshifts)
+      min_redshift = Enum.min(redshifts)
+      
+      distribution = %{
+        critical: Enum.count(files_data, & &1.redshift >= 0.8),
+        high: Enum.count(files_data, & &1.redshift >= 0.6 and &1.redshift < 0.8),
+        medium: Enum.count(files_data, & &1.redshift >= 0.4 and &1.redshift < 0.6),
+        low: Enum.count(files_data, & &1.redshift >= 0.2 and &1.redshift < 0.4),
+        minimal: Enum.count(files_data, & &1.redshift < 0.2),
+        blueshift: Enum.count(files_data, & &1.redshift < 0)
+      }
+      
+      most_redshifted = files_data
+        |> Enum.sort_by(& -&1.redshift)
+        |> Enum.take(5)
+        |> Enum.map(& {&1.path, &1.redshift})
+      
+      %{
+        total_files: total_files,
+        average_redshift: avg_redshift,
+        max_redshift: max_redshift,
+        min_redshift: min_redshift,
+        distribution: distribution,
+        most_redshifted: most_redshifted
+      }
+    else
+      %{
+        total_files: 0,
+        average_redshift: 0.0,
+        max_redshift: 0.0,
+        min_redshift: 0.0,
+        distribution: %{critical: 0, high: 0, medium: 0, low: 0, minimal: 0, blueshift: 0},
+        most_redshifted: []
+      }
+    end
+  end
+
+  defp calculate_file_age_days(mtime) do
+    now = DateTime.utc_now()
+    {{year, month, day}, {hour, minute, second}} = mtime
+    file_time = %DateTime{
+      year: year,
+      month: month,
+      day: day,
+      hour: hour,
+      minute: minute,
+      second: second,
+      time_zone: "Etc/UTC",
+      zone_abbr: "UTC",
+      utc_offset: 0,
+      std_offset: 0
+    }
+    DateTime.diff(now, file_time, :day)
+  end
+
+  defp get_file_change_count(_file_path) do
+    1 
+  end
+
+  defp get_last_change_date(file_path) do
+    case File.stat(file_path) do
+      {:ok, stat} ->
+        {{year, month, day}, _time} = stat.mtime
+        Date.new!(year, month, day) |> Date.to_iso8601()
+      {:error, _} ->
+        "unknown"
+    end
+  end
+
+  defp analyze_redshift_factors(file_path, age_days, change_count) do
+    factors = %{}
+    
+    factors = if age_days > 365 do
+      Map.put(factors, "old_code", 0.3)
+    else
+      factors
+    end
+    
+    factors = if change_count > 10 do
+      Map.put(factors, "frequently_changed", 0.2)
+    else
+      factors
+    end
+    
+    case File.read(file_path) do
+      {:ok, content} ->
+        lines = String.split(content, "\n")
+        if length(lines) > 200 do
+          Map.put(factors, "large_file", 0.2)
+        else
+          factors
+        end
+      _ -> factors
+    end
+  end
 end

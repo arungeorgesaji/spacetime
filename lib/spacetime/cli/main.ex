@@ -255,6 +255,44 @@ defmodule Spacetime.CLI.Main do
             ],
           ]
         ],
+        "redshift-viz": [
+          name: "redshift-viz",
+          about: "Visualize code aging and readability redshift",
+          args: [],
+          flags: [
+            show_improvements: [
+              short: "-i",
+              long: "--show-improvements",
+              help: "Show code that improved (blueshift)",
+              value: false
+            ]
+          ],
+          options: [
+            since: [
+              short: "-s",
+              long: "--since",
+              help: "Show changes since date (YYYY-MM-DD)",
+              value_name: "DATE",
+              parser: :string
+            ],
+            format: [
+              short: "-f",
+              long: "--format",
+              help: "Output format (text, timeline, json)",
+              value_name: "FORMAT",
+              parser: :string,
+              default: "text"
+            ],
+            threshold: [
+              short: "-t",
+              long: "--threshold",
+              help: "Redshift threshold for highlighting (0.0-1.0)",
+              value_name: "THRESHOLD",
+              parser: :float,
+              default: 0.7
+            ],
+          ]
+        ],
         "debug-object": [
           name: "debug-object",
           about: "Test object storage and retrieval in Spacetime",
@@ -429,6 +467,15 @@ defmodule Spacetime.CLI.Main do
           show_entanglements: parsed.flags.show_entanglements || false
         }
         Spacetime.CLI.Commands.GravityVisualization.run(options)
+
+      {[:"redshift-viz"], parsed} ->
+        options = %{
+          format: parsed.options[:format] || "text",
+          since: parsed.options[:since],
+          threshold: parsed.options[:threshold] || 0.7,
+          show_improvements: parsed.flags.show_improvements || false
+        }
+        Spacetime.CLI.Commands.RedshiftVisualization.run(options)  
 
       {[:"debug-object"], parsed} ->
         content = parsed.args.content

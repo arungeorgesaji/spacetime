@@ -52,7 +52,7 @@ Link repositories so commits in one instantly appear in another.
 
 Perfect for microservices where API and client libraries must version together.
 
-### Big Bang Reset
+### Big Bang Reset(Not implemented yet)
 Rewrite git history while preserving spacetime properties.
 
 Like git rebase -i but maintains physics metadata.
