@@ -185,6 +185,14 @@ defmodule Spacetime.CLI.Main do
             ]
           ],
           flags: [
+            bidirectional: [
+              short: "-b",
+              long: "--bidirectional",
+              help: "Enable bidirectional synchronization",
+              value: false
+            ]
+          ],
+          options: [
             strength: [
               short: "-s",
               long: "--strength",
@@ -193,12 +201,6 @@ defmodule Spacetime.CLI.Main do
               parser: :string,
               default: "medium"
             ],
-            bidirectional: [
-              short: "-b",
-              long: "--bidirectional",
-              help: "Enable bidirectional synchronization",
-              value: false
-            ]
           ]
         ],
         "quantum-disentangle": [
@@ -221,6 +223,37 @@ defmodule Spacetime.CLI.Main do
           name: "quantum-status",
           about: "Show current quantum entanglements",
           args: []
+        ],
+        "gravity-viz": [
+          name: "gravity-viz",
+          about: "Visualize gravitational relationships between branches",
+          args: [],
+          flags: [
+            show_entanglements: [
+              short: "-e",
+              long: "--show-entanglements",
+              help: "Show quantum entanglements",
+              value: false
+            ]
+          ],
+          options: [
+            format: [
+              short: "-f",
+              long: "--format",
+              help: "Output format (text, graph, json)",
+              value_name: "FORMAT",
+              parser: :string,
+              default: "text"
+            ],
+            threshold: [
+              short: "-t",
+              long: "--threshold",
+              help: "Minimum mass threshold to display",
+              value_name: "MASS",
+              parser: :float,
+              default: 0.1
+            ],
+          ]
         ],
         "debug-object": [
           name: "debug-object",
@@ -371,8 +404,8 @@ defmodule Spacetime.CLI.Main do
       
       {[:"quantum-entangle"], parsed} ->
         options = %{
-          strength: parsed.flags[:strength] || "medium",
-          bidirectional: parsed.flags[:bidirectional] || false
+          strength: parsed.options[:strength] || "medium",
+          bidirectional: parsed.flags.bidirectional || false
         }
         Spacetime.CLI.Commands.QuantumEntanglement.entangle(
           parsed.args.branch1, 
@@ -388,6 +421,14 @@ defmodule Spacetime.CLI.Main do
 
       {[:"quantum-status"], _parsed} ->
         Spacetime.CLI.Commands.QuantumEntanglement.status()
+
+      {[:"gravity-viz"], parsed} ->
+        options = %{
+          format: parsed.options[:format] || "text",
+          threshold: parsed.options[:threshold] || 0.1,
+          show_entanglements: parsed.flags.show_entanglements || false
+        }
+        Spacetime.CLI.Commands.GravityVisualization.run(options)
 
       {[:"debug-object"], parsed} ->
         content = parsed.args.content

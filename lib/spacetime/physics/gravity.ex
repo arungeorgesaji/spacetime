@@ -147,4 +147,52 @@ defmodule Spacetime.Physics.Gravity do
       acc + length(Regex.scan(pattern, content))
     end)
   end
+
+  def calculate_gravitational_network do
+    branches = Spacetime.Repo.Branch.list_branches()
+    
+    Enum.map(branches, fn branch ->
+      history = Spacetime.Repo.Branch.get_branch_history(branch)
+      mass_data = calculate_branch_mass(branch, history)
+      
+      %{
+        branch: branch,
+        mass: mass_data.total,
+        commit_count: length(history),
+        pulls: calculate_branch_pulls(branch, branches)
+      }
+    end)
+  end
+
+  defp calculate_branch_pulls(current_branch, all_branches) do
+    current_mass = calculate_branch_mass(current_branch, []).total
+    
+    Enum.reduce(all_branches, %{}, fn other_branch, acc ->
+      if other_branch != current_branch do
+        other_mass = calculate_branch_mass(other_branch, []).total
+        force = current_mass * other_mass * 0.01 
+        
+        if force > 0.001 do
+          Map.put(acc, other_branch, %{force: force})
+        else
+          acc
+        end
+      else
+        acc
+      end
+    end)
+  end
+
+  def find_gravitational_center do
+    network = calculate_gravitational_network()
+    
+    if Enum.empty?(network) do
+      nil
+    else
+      network
+      |> Enum.max_by(fn %{mass: mass, pulls: pulls} ->
+        mass + (map_size(pulls) * 0.1)
+      end)
+    end
+  end
 end
