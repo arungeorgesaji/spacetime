@@ -88,4 +88,11 @@ Shows:
 
 Spacetime implements its own object storage, commit tracking, and branching system with physics built into the core data structures.
 
+### Cosmic Insights  
+
+Comprehensive overview of repository's physics state, combining data from all the physics systems.
+
 > "In space, no one can hear your merge conflicts."
+
+
+

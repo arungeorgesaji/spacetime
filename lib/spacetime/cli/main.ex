@@ -293,6 +293,25 @@ defmodule Spacetime.CLI.Main do
             ],
           ]
         ],
+        "cosmic-insights": [
+          name: "cosmic-insights",
+          about: "Get comprehensive cosmic insights about your repository",
+          args: [],
+          flags: [
+            detailed: [
+              short: "-d",
+              long: "--detailed",
+              help: "Show detailed analysis",
+              value: false
+            ],
+            json: [
+              short: "-j",
+              long: "--json",
+              help: "Get insights as JSON",
+              value: false
+            ]
+          ]
+        ],
         "debug-object": [
           name: "debug-object",
           about: "Test object storage and retrieval in Spacetime",
@@ -476,6 +495,13 @@ defmodule Spacetime.CLI.Main do
           show_improvements: parsed.flags.show_improvements || false
         }
         Spacetime.CLI.Commands.RedshiftVisualization.run(options)  
+
+      {[:"cosmic-insights"], parsed} ->
+        options = %{
+          detailed: parsed.flags.detailed || false,
+          json: parsed.flags.json || false
+        }
+        Spacetime.CLI.Commands.CosmicInsights.run(options)
 
       {[:"debug-object"], parsed} ->
         content = parsed.args.content
