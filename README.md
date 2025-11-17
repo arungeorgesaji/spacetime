@@ -37,7 +37,7 @@ Branches accumulate mass based on size and age, making them harder to diverge fr
 
 ### Wormhole Merges
 Merge parallel universes where both features coexist without conflict.
-Smart conflict resolution that maintains both code paths, perfect for experimental features.
+Smart conflict resolution that maintains both code paths, perfect for experimental features(Note: Strageties for conflict resolution like feature flags not implemented in the current version).
 
 ### Dark Matter Detection
 Find code that has gravitational influence but isn't directly observable.
