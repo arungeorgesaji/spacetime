@@ -3,6 +3,7 @@ todo
 /_build
 /deps
 /spacetime
+burrito_out/
 *.beam
 *.ez 
 /.spacetime

@@ -1,6 +1,6 @@
 defmodule Spacetime.MixProject do
   use Mix.Project
-
+  
   def project do
     [
       app: :spacetime,
@@ -13,14 +13,13 @@ defmodule Spacetime.MixProject do
       package: package()
     ]
   end
-
+  
   def application do
     [
-      extra_applications: [:logger, :crypto],
-      mod: {Spacetime.Application, []}
+      extra_applications: [:logger, :crypto]
     ]
   end
-
+  
   defp deps do
     [
       {:optimus, ">= 0.0.0"},
@@ -28,11 +27,11 @@ defmodule Spacetime.MixProject do
       {:jason, ">= 0.0.0"}
     ]
   end
-
+  
   defp escript do
     [main_module: Spacetime.CLI.Main]
   end
-
+  
   defp package do
     [
       name: "spacetime_scm",
