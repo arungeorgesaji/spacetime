@@ -1,5 +1,3 @@
-# Spacetime
-
 Spacetime is a version control system which recognizes that as stars and galaxies evolve, so does your codebase.  
 It ages, gains complexity, and accumulates technical debt. By modeling code evolution through astrophysics, Spacetime introduces novel concepts like **Redshift**, **Event Horizons**, and **Branch Gravity** to help developers manage the lifecycle of their code more effectively.
 
@@ -7,11 +5,11 @@ It ages, gains complexity, and accumulates technical debt. By modeling code evol
 
 # See It In Action
 
-Watch the demo video to see a quick overview of Spacetime's basic features—without having to install anything first(Note: Ya I know its like 5 minutes I am gonna edit it down when free. I kinda need my sleep as I have exams this week).
+Watch the demo video to see a quick overview of Spacetime's basic features—without having to install anything first.
 
 <p align="center">
-  <a href="https://hc-cdn.hel1.your-objectstorage.com/s/v3/ad5217b571df06891af95fc31655a52ba2e96f23_2025-11-17_23-58-47.mp4">
-    <img src="https://dummyimage.com/800x450/000/fff&text=▶+Watch+Spacetime+Demo" alt="Watch the Lattice Demo Video" width="600"/>
+  <a href="https://hc-cdn.hel1.your-objectstorage.com/s/v3/2511219dfdf4d6b0acdcd1d070500761c46aff77_spacetime_demo.mp4">
+    <img src="https://dummyimage.com/800x450/000/fff&text=▶+Watch+Spacetime+Demo" alt="Watch the Spacetime Demo Video" width="600"/>
   </a>
 </p>
 
